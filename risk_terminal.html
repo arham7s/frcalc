@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Futures Risk Terminal</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #070809;
+  --s1: #0d0f10;
+  --s2: #131618;
+  --s3: #1a1d20;
+  --s4: #222528;
+  --border: rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.10);
+  --border3: rgba(255,255,255,0.16);
+  --text: #e8e4dd;
+  --muted: #7a7670;
+  --hint: #3a3835;
+  --accent: #c8f135;
+  --accent2: rgba(200,241,53,0.10);
+  --accent3: rgba(200,241,53,0.05);
+  --green: #4ade80; --green-d: rgba(74,222,128,0.10);
+  --red: #f87171;   --red-d: rgba(248,113,113,0.10);
+  --blue: #60a5fa;  --blue-d: rgba(96,165,250,0.10);
+  --amber:#fbbf24;  --amber-d:rgba(251,191,36,0.10);
+  --purple:#a78bfa; --purple-d:rgba(167,139,250,0.10);
+  --mono: 'JetBrains Mono', monospace;
+  --display: 'Syne', sans-serif;
+  --r: 6px; --r2: 10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--mono);background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* NAV */
+.topbar{position:sticky;top:0;z-index:100;background:rgba(7,8,9,0.92);backdrop-filter:blur(12px);border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:0;padding:0 24px;height:52px;}
+.brand{font-family:var(--display);font-size:14px;font-weight:700;color:var(--accent);letter-spacing:1px;margin-right:32px;white-space:nowrap;}
+.nav-tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;}
+.nav-tabs::-webkit-scrollbar{display:none;}
+.nav-tab{padding:6px 14px;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:0.5px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:var(--r);white-space:nowrap;transition:all 0.15s;}
+.nav-tab:hover{color:var(--text);background:var(--s3);}
+.nav-tab.active{color:var(--accent);background:var(--accent2);}
+.live-badge{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);letter-spacing:0.5px;white-space:nowrap;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+
+/* LAYOUT */
+.page{display:none;padding:24px;max-width:1100px;margin:0 auto;}
+.page.active{display:block;animation:fadeUp 0.2s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+/* CARDS */
+.card{background:var(--s1);border:0.5px solid var(--border);border-radius:var(--r2);padding:20px 22px;margin-bottom:14px;}
+.card-title{font-family:var(--display);font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.card-sub{font-size:10px;color:var(--muted);letter-spacing:0.5px;margin-bottom:18px;}
+.section-label{font-size:9px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+
+/* FORM GRID */
+.fg{display:grid;gap:10px;}
+.fg-2{grid-template-columns:1fr 1fr;}
+.fg-3{grid-template-columns:1fr 1fr 1fr;}
+.fg-4{grid-template-columns:1fr 1fr 1fr 1fr;}
+@media(max-width:640px){.fg-2,.fg-3,.fg-4{grid-template-columns:1fr 1fr;}}
+@media(max-width:420px){.fg-2,.fg-3,.fg-4{grid-template-columns:1fr;}}
+
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:10px;color:var(--muted);letter-spacing:0.5px;}
+.field input,.field select{height:36px;background:var(--s2);border:0.5px solid var(--border2);border-radius:var(--r);color:var(--text);font-family:var(--mono);font-size:12px;padding:0 10px;outline:none;transition:border-color 0.15s;width:100%;}
+.field input:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(200,241,53,0.06);}
+.field input::placeholder{color:var(--hint);}
+.field select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237a7670' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+.field select option{background:var(--s2);}
+
+/* BUTTONS */
+.btn{height:38px;padding:0 18px;border:none;border-radius:var(--r);font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:0.5px;cursor:pointer;transition:all 0.15s;}
+.btn-primary{background:var(--accent);color:#070809;}
+.btn-primary:hover{opacity:0.88;}
+.btn-ghost{background:transparent;border:0.5px solid var(--border2);color:var(--muted);}
+.btn-ghost:hover{background:var(--s3);color:var(--text);}
+.btn-danger{background:var(--red-d);border:0.5px solid rgba(248,113,113,0.2);color:var(--red);}
+.btn-row{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;}
+
+/* MODE TOGGLE */
+.toggle{display:flex;gap:3px;background:var(--s2);border-radius:var(--r);padding:3px;margin-bottom:16px;width:fit-content;}
+.toggle-btn{padding:6px 16px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:0.5px;border:none;border-radius:4px;background:transparent;color:var(--muted);cursor:pointer;transition:all 0.15s;}
+.toggle-btn.active{background:var(--accent2);color:var(--accent);}
+
+/* DIR BUTTONS */
+.dir-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.dir-btn{height:36px;border-radius:var(--r);border:0.5px solid var(--border2);background:transparent;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:1px;color:var(--muted);cursor:pointer;transition:all 0.15s;}
+.dir-btn.long.active{background:var(--green-d);color:var(--green);border-color:rgba(74,222,128,0.25);}
+.dir-btn.short.active{background:var(--red-d);color:var(--red);border-color:rgba(248,113,113,0.25);}
+
+/* RESULTS */
+.result-grid{display:grid;gap:8px;}
+.rg-2{grid-template-columns:1fr 1fr;}
+.rg-3{grid-template-columns:1fr 1fr 1fr;}
+.rg-4{grid-template-columns:1fr 1fr 1fr 1fr;}
+@media(max-width:600px){.rg-3,.rg-4{grid-template-columns:1fr 1fr;}}
+.metric{background:var(--s2);border-radius:var(--r);padding:14px;}
+.metric .lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.metric .val{font-family:var(--display);font-size:22px;font-weight:600;color:var(--text);}
+.metric .val.danger{color:var(--red);}
+.metric .val.success{color:var(--green);}
+.metric .val.info{color:var(--blue);}
+.metric .val.accent{color:var(--accent);}
+.metric .val.amber{color:var(--amber);}
+.metric .sub{font-size:10px;color:var(--muted);margin-top:4px;}
+.metric.hi{border:0.5px solid rgba(248,113,113,0.2);background:var(--red-d);}
+.metric.hi .val{color:var(--red);}
+.metric.lo{border:0.5px solid rgba(74,222,128,0.2);background:var(--green-d);}
+.metric.lo .val{color:var(--green);}
+.metric.key{border:0.5px solid rgba(200,241,53,0.15);background:var(--accent3);}
+.metric.key .val{color:var(--accent);}
+
+/* DIVIDER */
+.divider{height:0.5px;background:var(--border);margin:18px 0;}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;margin-top:12px;}
+table{width:100%;border-collapse:collapse;font-size:11px;}
+thead tr{border-bottom:0.5px solid var(--border2);}
+th{text-align:left;padding:8px 10px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:500;}
+td{padding:10px 10px;color:var(--text);border-bottom:0.5px solid var(--border);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--s2);}
+.td-right{text-align:right;}
+.tag{display:inline-block;font-size:9px;padding:2px 7px;border-radius:3px;font-weight:500;letter-spacing:0.5px;}
+.tag.long{background:var(--green-d);color:var(--green);}
+.tag.short{background:var(--red-d);color:var(--red);}
+.tag.energy{background:var(--amber-d);color:var(--amber);}
+.tag.equity{background:var(--blue-d);color:var(--blue);}
+.tag.metal{background:rgba(167,139,250,0.12);color:var(--purple);}
+.tag.fx{background:var(--green-d);color:var(--green);}
+.tag.rate{background:rgba(248,113,113,0.08);color:#fca5a5;}
+.tag.ag{background:rgba(251,191,36,0.08);color:#fcd34d;}
+.tag.soft{background:rgba(200,241,53,0.08);color:var(--accent);}
+
+/* STRESS TABLE */
+.stress-row{display:grid;grid-template-columns:120px 1fr 1fr 1fr 1fr;gap:0;align-items:center;padding:10px 14px;border-bottom:0.5px solid var(--border);font-size:12px;}
+.stress-row:last-child{border-bottom:none;}
+.stress-row.header{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:8px 14px;}
+.stress-scenario{color:var(--muted);}
+.stress-loss{color:var(--red);font-weight:500;}
+
+/* PILL */
+.pill{display:inline-block;font-size:9px;padding:2px 8px;border-radius:20px;font-weight:500;letter-spacing:0.5px;}
+.pill.up{background:var(--green-d);color:var(--green);}
+.pill.down{background:var(--red-d);color:var(--red);}
+.pill.flat{background:var(--s3);color:var(--muted);}
+
+/* PRICE CARD */
+.price-card{background:var(--s2);border-radius:var(--r);padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border:0.5px solid var(--border);}
+.price-big{font-family:var(--display);font-size:26px;font-weight:700;color:var(--text);}
+.price-meta{display:flex;gap:16px;flex-wrap:wrap;}
+.pm-item{display:flex;flex-direction:column;gap:2px;}
+.pm-lbl{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.pm-val{font-size:12px;font-weight:500;color:var(--text);}
+.pm-val.hi{color:var(--green);}
+.pm-val.lo{color:var(--red);}
+.tchips{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.tchip{font-size:10px;padding:3px 8px;border-radius:3px;background:var(--accent3);color:var(--accent);border:0.5px solid rgba(200,241,53,0.12);}
+
+/* SPINNER */
+.spin{display:inline-block;width:12px;height:12px;border:1.5px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ERR */
+.err{font-size:11px;color:var(--red);margin-top:8px;display:none;}
+.info-box{background:var(--blue-d);border:0.5px solid rgba(96,165,250,0.15);border-radius:var(--r);padding:10px 14px;font-size:11px;color:var(--blue);line-height:1.6;margin-top:10px;}
+.warn-box{background:var(--amber-d);border:0.5px solid rgba(251,191,36,0.15);border-radius:var(--r);padding:10px 14px;font-size:11px;color:var(--amber);line-height:1.6;}
+
+/* PORTFOLIO */
+.port-empty{text-align:center;padding:32px;color:var(--muted);font-size:12px;}
+.port-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-top:14px;}
+
+/* GLOSSARY */
+.glos-search{width:100%;height:38px;background:var(--s2);border:0.5px solid var(--border2);border-radius:var(--r);color:var(--text);font-family:var(--mono);font-size:12px;padding:0 14px;outline:none;margin-bottom:14px;}
+.glos-search:focus{border-color:var(--accent);}
+.glos-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.glos-filter{padding:4px 12px;font-size:10px;border-radius:20px;border:0.5px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:var(--mono);transition:all 0.15s;}
+.glos-filter.active{background:var(--accent2);color:var(--accent);border-color:rgba(200,241,53,0.2);}
+.glos-row{display:grid;grid-template-columns:70px 200px 90px 100px 1fr;gap:0;align-items:start;padding:12px 14px;border-bottom:0.5px solid var(--border);font-size:11px;}
+.glos-row:hover{background:var(--s2);}
+.glos-row.header{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:8px 14px;background:var(--s2);position:sticky;top:52px;}
+.glos-ticker{font-weight:600;color:var(--accent);font-size:12px;}
+.glos-name{color:var(--text);font-weight:500;}
+.glos-desc{color:var(--muted);font-size:10px;line-height:1.5;}
+@media(max-width:700px){.glos-row{grid-template-columns:60px 1fr;}.glos-row .glos-exch,.glos-row .glos-ts,.glos-row .glos-desc{display:none;}}
+
+/* AUTOFILL */
+.af-note{font-size:10px;color:var(--accent);margin-top:3px;opacity:0;transition:opacity 0.2s;}
+.af-note.show{opacity:1;}
+
+/* RATIO BAR */
+.ratio-bar-wrap{margin-top:10px;}
+.ratio-bar-label{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:5px;}
+.ratio-bar-track{height:6px;background:var(--s3);border-radius:3px;overflow:hidden;}
+.ratio-bar-fill{height:100%;border-radius:3px;background:var(--accent);transition:width 0.5s ease;}
+.ratio-bar-fill.danger{background:var(--red);}
+.ratio-bar-fill.warn{background:var(--amber);}
+
+/* CONC BARS */
+.conc-item{margin-bottom:10px;}
+.conc-label{display:flex;justify-content:space-between;font-size:11px;color:var(--text);margin-bottom:4px;}
+.conc-bar{height:4px;background:var(--s3);border-radius:2px;overflow:hidden;}
+.conc-fill{height:100%;border-radius:2px;background:var(--accent);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">FRT</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('trade')">A · Trade Risk</button>
+    <button class="nav-tab" onclick="showPage('sizing')">B · Position Sizing</button>
+    <button class="nav-tab" onclick="showPage('margin')">C · Margin</button>
+    <button class="nav-tab" onclick="showPage('stress')">D · Stress Test</button>
+    <button class="nav-tab" onclick="showPage('portfolio')">E · Portfolio</button>
+    <button class="nav-tab" onclick="showPage('glossary')">F · Glossary</button>
+  </div>
+  <div class="live-badge"><span class="live-dot"></span><span id="live-label">LIVE</span></div>
+</div>
+
+<!-- ==================== PAGE A: TRADE RISK ==================== -->
+<div class="page active" id="page-trade">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+    <div>
+      <div class="card">
+        <div class="card-title">Trade Risk Calculator</div>
+        <div class="card-sub">MODULE A — tick-accurate P&L risk sizing</div>
+
+        <div class="section-label">Contract</div>
+        <div class="fg fg-2" style="margin-bottom:12px;">
+          <div class="field">
+            <label>Ticker</label>
+            <select id="a-ticker" onchange="aOnTicker()"></select>
+          </div>
+          <div class="field">
+            <label>Direction</label>
+            <div class="dir-btns">
+              <button class="dir-btn long active" id="a-long" onclick="aSetDir('L')">LONG</button>
+              <button class="dir-btn short" id="a-short" onclick="aSetDir('S')">SHORT</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="a-price-card" class="price-card" style="display:none">
+          <div>
+            <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:4px;">LIVE PRICE</div>
+            <div class="price-big" id="a-price">—</div>
+            <span class="pill flat" id="a-chg">—</span>
+          </div>
+          <div class="price-meta">
+            <div class="pm-item"><div class="pm-lbl">High</div><div class="pm-val hi" id="a-high">—</div></div>
+            <div class="pm-item"><div class="pm-lbl">Low</div><div class="pm-val lo" id="a-low">—</div></div>
+            <div class="pm-item"><div class="pm-lbl">Prev</div><div class="pm-val" id="a-prev">—</div></div>
+            <div class="pm-item"><div class="pm-lbl">Status</div><div><span class="spin" id="a-spin" style="display:none"></span><span id="a-status" style="font-size:10px;color:var(--muted);">loading…</span></div></div>
+          </div>
+          <div style="width:100%">
+            <div class="tchips">
+              <span class="tchip" id="a-chip-ts">—</span>
+              <span class="tchip" id="a-chip-tv">—</span>
+              <span class="tchip" id="a-chip-mg">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-label">Parameters</div>
+        <div class="fg fg-2">
+          <div class="field">
+            <label>Contracts</label>
+            <input type="number" id="a-contracts" value="1" min="1" step="1">
+          </div>
+          <div class="field">
+            <label>Entry Price</label>
+            <input type="number" id="a-entry" placeholder="0.00" step="any">
+            <div class="af-note" id="a-af">↑ auto-filled from live</div>
+          </div>
+          <div class="field">
+            <label>Stop Loss Price</label>
+            <input type="number" id="a-stop" placeholder="0.00" step="any">
+          </div>
+          <div class="field">
+            <label>Account Capital ($)</label>
+            <input type="number" id="a-capital" placeholder="100000" step="any">
+          </div>
+        </div>
+        <div class="err" id="a-err"></div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="aCalculate()">CALCULATE RISK</button>
+          <button class="btn btn-ghost" onclick="aReset()">RESET</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" id="a-results" style="display:none">
+        <div class="card-title">Risk Output</div>
+        <div class="card-sub">based on current inputs</div>
+        <div class="result-grid rg-2">
+          <div class="metric hi"><div class="lbl">Total Trade Risk</div><div class="val danger" id="r-total">—</div></div>
+          <div class="metric"><div class="lbl">Risk per Contract</div><div class="val info" id="r-rpc">—</div></div>
+          <div class="metric key"><div class="lbl">Ticks at Risk</div><div class="val accent" id="r-ticks">—</div></div>
+          <div class="metric"><div class="lbl">Price Points at Risk</div><div class="val" id="r-pts">—</div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="result-grid rg-2">
+          <div class="metric"><div class="lbl">% of Capital at Risk</div><div class="val" id="r-pct">—</div></div>
+          <div class="metric"><div class="lbl">Stop Distance</div><div class="val" id="r-dist">—</div></div>
+        </div>
+        <div class="ratio-bar-wrap" id="r-bar-wrap" style="display:none">
+          <div class="ratio-bar-label"><span>Capital at Risk</span><span id="r-bar-pct">0%</span></div>
+          <div class="ratio-bar-track"><div class="ratio-bar-fill" id="r-bar"></div></div>
+        </div>
+        <div class="warn-box" id="r-warn" style="display:none;margin-top:12px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Quick Reference</div>
+        <div class="card-sub">selected contract specs</div>
+        <div id="a-spec-table" style="font-size:11px;color:var(--muted);">Select a ticker to see specs.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PAGE B: POSITION SIZING ==================== -->
+<div class="page" id="page-sizing">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+    <div class="card">
+      <div class="card-title">Position Sizing Engine</div>
+      <div class="card-sub">MODULE B — how many contracts can you trade?</div>
+      <div class="fg fg-2">
+        <div class="field"><label>Ticker</label><select id="b-ticker" onchange="bOnTicker()"></select></div>
+        <div class="field"><label>Account Capital ($)</label><input type="number" id="b-capital" placeholder="100000" step="any"></div>
+        <div class="field"><label>Max Risk % per Trade</label><input type="number" id="b-riskpct" placeholder="1" step="0.1" min="0.1" max="10"></div>
+        <div class="field"><label>Entry Price</label><input type="number" id="b-entry" placeholder="0.00" step="any"><div class="af-note" id="b-af">↑ auto-filled</div></div>
+        <div class="field"><label>Stop Loss Price</label><input type="number" id="b-stop" placeholder="0.00" step="any"></div>
+        <div class="field"><label>Direction</label>
+          <div class="dir-btns">
+            <button class="dir-btn long active" id="b-long" onclick="bSetDir('L')">LONG</button>
+            <button class="dir-btn short" id="b-short" onclick="bSetDir('S')">SHORT</button>
+          </div>
+        </div>
+      </div>
+      <div class="err" id="b-err"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="bCalculate()">CALCULATE SIZE</button>
+        <button class="btn btn-ghost" onclick="bReset()">RESET</button>
+      </div>
+    </div>
+    <div class="card" id="b-results" style="display:none">
+      <div class="card-title">Sizing Output</div>
+      <div class="card-sub">optimal contract count for your risk budget</div>
+      <div class="result-grid rg-2">
+        <div class="metric key"><div class="lbl">Contracts Allowed</div><div class="val accent" id="bs-contracts">—</div></div>
+        <div class="metric"><div class="lbl">Allowed Risk ($)</div><div class="val info" id="bs-allowed">—</div></div>
+        <div class="metric hi"><div class="lbl">Actual Risk Used</div><div class="val danger" id="bs-actual">—</div></div>
+        <div class="metric lo"><div class="lbl">Remaining Buffer</div><div class="val success" id="bs-buffer">—</div></div>
+      </div>
+      <div class="divider"></div>
+      <div class="result-grid rg-2">
+        <div class="metric"><div class="lbl">Risk per Contract</div><div class="val" id="bs-rpc">—</div></div>
+        <div class="metric"><div class="lbl">Ticks at Risk</div><div class="val accent" id="bs-ticks">—</div></div>
+      </div>
+      <div class="info-box" id="bs-note" style="margin-top:12px;display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PAGE C: MARGIN ==================== -->
+<div class="page" id="page-margin">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+    <div class="card">
+      <div class="card-title">Margin Comparison Engine</div>
+      <div class="card-sub">MODULE C — can actual loss exceed posted margin?</div>
+      <div class="fg fg-2">
+        <div class="field"><label>Ticker</label><select id="c-ticker" onchange="cOnTicker()"></select></div>
+        <div class="field"><label>Number of Contracts</label><input type="number" id="c-contracts" value="1" min="1" step="1"></div>
+        <div class="field"><label>Entry Price</label><input type="number" id="c-entry" placeholder="0.00" step="any"><div class="af-note" id="c-af">↑ auto-filled</div></div>
+        <div class="field"><label>Stop Loss Price</label><input type="number" id="c-stop" placeholder="0.00" step="any"></div>
+        <div class="field"><label>Initial Margin / Contract ($)</label><input type="number" id="c-init" placeholder="0.00" step="any"></div>
+        <div class="field"><label>Maintenance Margin / Contract ($)</label><input type="number" id="c-maint" placeholder="0.00" step="any"></div>
+      </div>
+      <div class="err" id="c-err"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="cCalculate()">COMPARE</button>
+        <button class="btn btn-ghost" onclick="cReset()">RESET</button>
+      </div>
+    </div>
+    <div class="card" id="c-results" style="display:none">
+      <div class="card-title">Margin Output</div>
+      <div class="card-sub">risk vs margin posted</div>
+      <div class="result-grid rg-2">
+        <div class="metric"><div class="lbl">Total Initial Margin</div><div class="val info" id="cm-init">—</div></div>
+        <div class="metric"><div class="lbl">Total Maint. Margin</div><div class="val" id="cm-maint">—</div></div>
+        <div class="metric hi"><div class="lbl">Total Trade Risk</div><div class="val danger" id="cm-risk">—</div></div>
+        <div class="metric"><div class="lbl">Risk / Margin Ratio</div><div class="val amber" id="cm-ratio">—</div></div>
+      </div>
+      <div class="divider"></div>
+      <div class="ratio-bar-wrap">
+        <div class="ratio-bar-label"><span>Trade Risk vs Initial Margin</span><span id="cm-bar-pct">—</span></div>
+        <div class="ratio-bar-track"><div class="ratio-bar-fill" id="cm-bar"></div></div>
+      </div>
+      <div id="cm-verdict" class="warn-box" style="margin-top:12px;display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PAGE D: STRESS TEST ==================== -->
+<div class="page" id="page-stress">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+    <div class="card">
+      <div class="card-title">Stress Testing Engine</div>
+      <div class="card-sub">MODULE D — what happens under adverse moves?</div>
+      <div class="fg fg-2">
+        <div class="field"><label>Ticker</label><select id="d-ticker" onchange="dOnTicker()"></select></div>
+        <div class="field"><label>Contracts</label><input type="number" id="d-contracts" value="1" min="1" step="1"></div>
+        <div class="field"><label>Entry Price</label><input type="number" id="d-entry" placeholder="0.00" step="any"><div class="af-note" id="d-af">↑ auto-filled</div></div>
+        <div class="field"><label>Direction</label>
+          <div class="dir-btns">
+            <button class="dir-btn long active" id="d-long" onclick="dSetDir('L')">LONG</button>
+            <button class="dir-btn short" id="d-short" onclick="dSetDir('S')">SHORT</button>
+          </div>
+        </div>
+        <div class="field"><label>Custom Shock % (optional)</label><input type="number" id="d-custom" placeholder="e.g. 7.5" step="0.1"></div>
+        <div class="field"><label>Account Capital ($)</label><input type="number" id="d-capital" placeholder="100000" step="any"></div>
+      </div>
+      <div class="err" id="d-err"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="dCalculate()">RUN SCENARIOS</button>
+        <button class="btn btn-ghost" onclick="dReset()">RESET</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Scenario Results</div>
+      <div class="card-sub">loss at each adverse move level</div>
+      <div id="d-results">
+        <div class="port-empty">Run the stress test to see scenario losses.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PAGE E: PORTFOLIO ==================== -->
+<div class="page" id="page-portfolio">
+  <div style="display:grid;grid-template-columns:380px 1fr;gap:14px;align-items:start;">
+    <div class="card">
+      <div class="card-title">Add Position</div>
+      <div class="card-sub">MODULE E — build your portfolio</div>
+      <div class="fg fg-2">
+        <div class="field"><label>Ticker</label><select id="e-ticker"></select></div>
+        <div class="field"><label>Direction</label>
+          <div class="dir-btns">
+            <button class="dir-btn long active" id="e-long" onclick="eSetDir('L')">LONG</button>
+            <button class="dir-btn short" id="e-short" onclick="eSetDir('S')">SHORT</button>
+          </div>
+        </div>
+        <div class="field"><label>Contracts</label><input type="number" id="e-contracts" value="1" min="1" step="1"></div>
+        <div class="field"><label>Entry Price</label><input type="number" id="e-entry" placeholder="0.00" step="any"></div>
+        <div class="field"><label>Stop Loss Price</label><input type="number" id="e-stop" placeholder="0.00" step="any"></div>
+        <div class="field"><label>Margin / Contract ($)</label><input type="number" id="e-margin" placeholder="0.00" step="any"></div>
+      </div>
+      <div class="err" id="e-err"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="eAdd()">ADD POSITION</button>
+        <button class="btn btn-ghost" onclick="eClear()">CLEAR ALL</button>
+      </div>
+      <div style="margin-top:14px;">
+        <div class="field"><label>Account Capital ($)</label><input type="number" id="e-capital" placeholder="100000" step="any" oninput="eRefresh()"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="card-title">Portfolio Summary</div>
+        <div class="card-sub">live aggregate risk across all positions</div>
+        <div class="port-summary" id="e-summary">
+          <div class="metric"><div class="lbl">Total Trade Risk</div><div class="val danger" id="ep-risk">$0.00</div></div>
+          <div class="metric"><div class="lbl">Total Margin Used</div><div class="val info" id="ep-margin">$0.00</div></div>
+          <div class="metric"><div class="lbl">Largest Position Risk</div><div class="val amber" id="ep-largest">$0.00</div></div>
+          <div class="metric"><div class="lbl">Positions</div><div class="val" id="ep-count">0</div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="card-title" style="margin-bottom:8px;">Concentration</div>
+        <div id="e-conc"><div style="font-size:11px;color:var(--muted);">No positions yet.</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Positions</div>
+        <div id="e-table"><div class="port-empty">No positions added yet.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PAGE F: GLOSSARY ==================== -->
+<div class="page" id="page-glossary">
+  <div class="card">
+    <div class="card-title">Contract Glossary</div>
+    <div class="card-sub">MODULE F — full names, exchanges, and descriptions for all 63 contracts</div>
+    <input class="glos-search" id="glos-search" placeholder="Search ticker, name, or keyword…" oninput="glosFilter()">
+    <div class="glos-filters" id="glos-filters"></div>
+    <div class="glos-row header">
+      <span>Ticker</span><span>Full Name</span><span>Exchange</span><span>Type</span><span>Description</span>
+    </div>
+    <div id="glos-body"></div>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const FUTURES = {
+  '6A':{ts:0.0001,tv:10,init:2200,maint:2000,name:'Australian Dollar',exch:'CME',type:'FX',desc:'AUD/USD currency futures. Tracks the Australian dollar vs US dollar. Popular for commodity-currency exposure.'},
+  '6B':{ts:0.0001,tv:6.25,init:2500,maint:2300,name:'British Pound',exch:'CME',type:'FX',desc:'GBP/USD currency futures. One of the oldest and most liquid FX futures contracts.'},
+  '6C':{ts:0.00005,tv:5,init:1800,maint:1600,name:'Canadian Dollar',exch:'CME',type:'FX',desc:'CAD/USD futures. Often correlated with crude oil prices due to Canada\'s energy exports.'},
+  '6E':{ts:0.00005,tv:6.25,init:2400,maint:2200,name:'Euro FX',exch:'CME',type:'FX',desc:'EUR/USD futures. Most liquid FX futures contract globally. Benchmark for dollar strength.'},
+  '6J':{ts:0.0000005,tv:6.25,init:2000,maint:1800,name:'Japanese Yen',exch:'CME',type:'FX',desc:'JPY/USD futures. Safe-haven currency. Sensitive to Bank of Japan policy and risk sentiment.'},
+  '6L':{ts:0.00005,tv:5,init:1500,maint:1300,name:'Brazilian Real',exch:'CME',type:'FX',desc:'BRL/USD futures. Emerging market currency exposed to commodity prices and political risk.'},
+  '6M':{ts:0.00001,tv:5,init:1600,maint:1400,name:'Mexican Peso',exch:'CME',type:'FX',desc:'MXN/USD futures. Sensitive to US-Mexico trade relations and oil prices.'},
+  '6N':{ts:0.0001,tv:10,init:1900,maint:1700,name:'New Zealand Dollar',exch:'CME',type:'FX',desc:'NZD/USD futures. Commodity and dairy export driven currency.'},
+  '6R':{ts:0.000005,tv:12.5,init:2000,maint:1800,name:'Russian Ruble',exch:'CME',type:'FX',desc:'RUB/USD futures. Sensitive to energy prices and geopolitical risk.'},
+  '6S':{ts:0.0001,tv:12.5,init:5000,maint:4500,name:'Swiss Franc',exch:'CME',type:'FX',desc:'CHF/USD futures. Safe-haven currency. Closely tied to EUR due to Swiss export dependence.'},
+  '6Z':{ts:0.000025,tv:12.5,init:1500,maint:1300,name:'South African Rand',exch:'CME',type:'FX',desc:'ZAR/USD futures. Emerging market currency exposed to gold/platinum exports.'},
+  'BTC':{ts:5,tv:25,init:95000,maint:85000,name:'Bitcoin Futures',exch:'CME',type:'Crypto',desc:'Cash-settled Bitcoin futures. High volatility asset. Each contract = 5 BTC.'},
+  'BZ':{ts:0.01,tv:10,init:4000,maint:3600,name:'Brent Crude Oil',exch:'NYMEX',type:'Energy',desc:'International crude oil benchmark. Used to price most of world\'s traded oil. Different from WTI.'},
+  'CC':{ts:1,tv:11.2,init:2200,maint:2000,name:'Cocoa',exch:'ICE',type:'Soft',desc:'Cocoa bean futures. Main ingredient in chocolate. West Africa supply risk drives volatility.'},
+  'CL':{ts:0.01,tv:10,init:5000,maint:4500,name:'Crude Oil WTI',exch:'NYMEX',type:'Energy',desc:'West Texas Intermediate crude. US benchmark oil price. Most traded energy futures globally.'},
+  'CT':{ts:0.01,tv:5,init:1800,maint:1600,name:'Cotton',exch:'ICE',type:'Soft',desc:'Cotton No. 2 futures. Key textile raw material. Weather and US farm policy are major drivers.'},
+  'DC':{ts:0.01,tv:20,init:1200,maint:1000,name:'Class III Milk',exch:'CME',type:'Ag',desc:'Dairy futures used to hedge milk price risk. Priced per hundredweight.'},
+  'DX':{ts:0.005,tv:5,init:2200,maint:2000,name:'US Dollar Index',exch:'ICE',type:'FX',desc:'Index measuring the dollar vs a basket of 6 major currencies (EUR, JPY, GBP, CAD, SEK, CHF).'},
+  'EH':{ts:0.1,tv:29,init:3500,maint:3200,name:'Ethanol',exch:'CBOT',type:'Energy',desc:'Fuel ethanol futures. Sensitive to corn prices and US renewable fuel policy.'},
+  'EMD':{ts:0.1,tv:10,init:12000,maint:10000,name:'E-mini S&P MidCap 400',exch:'CME',type:'Equity',desc:'Mid-cap US equity index futures. Tracks 400 mid-sized US companies.'},
+  'ES':{ts:0.25,tv:12.5,init:16000,maint:14500,name:'E-mini S&P 500',exch:'CME',type:'Equity',desc:'Most liquid equity index futures in the world. Tracks the S&P 500. Standard institutional benchmark.'},
+  'GC':{ts:0.1,tv:10,init:10000,maint:9000,name:'Gold',exch:'COMEX',type:'Metal',desc:'Gold futures. 100 troy oz per contract. Global safe-haven and inflation hedge. Dollar-denominated.'},
+  'GD':{ts:0.05,tv:12.5,init:800,maint:700,name:'Goldman Sachs Commodity Index',exch:'CME',type:'Equity',desc:'Broad commodity index futures tracking the S&P GSCI.'},
+  'GE':{ts:0.005,tv:12.5,init:800,maint:700,name:'Eurodollar',exch:'CME',type:'Rates',desc:'Short-term interest rate futures based on 3-month USD LIBOR deposits. Key for rate hedging.'},
+  'GF':{ts:0.00025,tv:12.5,init:1500,maint:1300,name:'Feeder Cattle',exch:'CME',type:'Ag',desc:'Feeder cattle futures (cattle entering feedlots). Sensitive to feed grain costs.'},
+  'HE':{ts:0.00025,tv:10,init:2200,maint:2000,name:'Lean Hogs',exch:'CME',type:'Ag',desc:'Cash-settled lean hog futures. Sensitive to pork demand and disease outbreaks (ASF).'},
+  'HG':{ts:0.0005,tv:12.5,init:6000,maint:5400,name:'Copper',exch:'COMEX',type:'Metal',desc:'High-grade copper futures. 25,000 lbs per contract. Strong economic indicator — "Dr. Copper".'},
+  'HO':{ts:0.0001,tv:4.2,init:4500,maint:4000,name:'Heating Oil',exch:'NYMEX',type:'Energy',desc:'No. 2 heating oil futures. Major refined product. Strong seasonal demand in winter months.'},
+  'KC':{ts:0.05,tv:7.5,init:3000,maint:2700,name:'Coffee',exch:'ICE',type:'Soft',desc:'Coffee C futures (Arabica). Brazil and Colombia are largest producers. Weather risk dominant.'},
+  'KE':{ts:0.25,tv:12.5,init:1600,maint:1400,name:'Hard Red Winter Wheat',exch:'KCBT',type:'Ag',desc:'Kansas City hard red winter wheat. Different grade than CBOT wheat. Used in bread flour.'},
+  'LBS':{ts:0.1,tv:11,init:1800,maint:1600,name:'Random Length Lumber',exch:'CME',type:'Soft',desc:'Lumber futures. Tied to housing starts and construction activity. Extremely volatile.'},
+  'LE':{ts:0.00025,tv:10,init:1600,maint:1400,name:'Live Cattle',exch:'CME',type:'Ag',desc:'Live cattle futures. Cash settled against actual cattle price. Used by ranchers to hedge.'},
+  'MES':{ts:0.25,tv:1.25,init:1600,maint:1450,name:'Micro E-mini S&P 500',exch:'CME',type:'Equity',desc:'1/10th size of E-mini S&P 500. Ideal for smaller accounts and precise position sizing.'},
+  'MGC':{ts:0.1,tv:1,init:1000,maint:900,name:'Micro Gold',exch:'COMEX',type:'Metal',desc:'1/10th size of standard Gold futures. 10 troy oz per contract. Accessible gold exposure.'},
+  'MNQ':{ts:0.25,tv:0.5,init:2000,maint:1800,name:'Micro E-mini Nasdaq-100',exch:'CME',type:'Equity',desc:'1/10th size of E-mini Nasdaq. Tracks top 100 non-financial NASDAQ companies.'},
+  'MWE':{ts:0.25,tv:12.5,init:900,maint:800,name:'Hard Red Spring Wheat',exch:'MGE',type:'Ag',desc:'Minneapolis hard red spring wheat. Premium protein wheat used in specialty breads.'},
+  'MYM':{ts:1,tv:0.5,init:1000,maint:900,name:'Micro E-mini Dow',exch:'CBOT',type:'Equity',desc:'1/10th size of E-mini Dow. Tracks the 30-stock Dow Jones Industrial Average.'},
+  'NG':{ts:0.001,tv:10,init:3000,maint:2700,name:'Natural Gas',exch:'NYMEX',type:'Energy',desc:'Henry Hub natural gas futures. Extremely volatile. Weather and storage data are key drivers.'},
+  'NQ':{ts:0.25,tv:5,init:20000,maint:18000,name:'E-mini Nasdaq-100',exch:'CME',type:'Equity',desc:'Tracks top 100 non-financial NASDAQ stocks. Dominated by mega-cap tech. High beta instrument.'},
+  'OJ':{ts:0.05,tv:7.5,init:1800,maint:1600,name:'Orange Juice',exch:'ICE',type:'Soft',desc:'Frozen concentrated OJ futures. Florida freeze risk and Brazilian harvest are key drivers.'},
+  'PA':{ts:0.1,tv:10,init:15000,maint:13500,name:'Palladium',exch:'COMEX',type:'Metal',desc:'Palladium futures. Used in catalytic converters. Russian supply concentration creates risk.'},
+  'PL':{ts:0.01,tv:5,init:4000,maint:3600,name:'Platinum',exch:'COMEX',type:'Metal',desc:'Platinum futures. Industrial and jewelry use. South African mine supply dominates pricing.'},
+  'QG':{ts:0.005,tv:12.5,init:1000,maint:900,name:'E-mini Natural Gas',exch:'NYMEX',type:'Energy',desc:'2,500 MMBtu natural gas futures. Smaller version of the NG contract.'},
+  'QM':{ts:0.025,tv:12.5,init:2500,maint:2250,name:'E-mini Crude Oil',exch:'NYMEX',type:'Energy',desc:'500-barrel crude oil futures. Half the size of the standard CL contract.'},
+  'RB':{ts:0.0001,tv:4.2,init:5000,maint:4500,name:'RBOB Gasoline',exch:'NYMEX',type:'Energy',desc:'Reformulated blendstock gasoline futures. Seasonal driving demand pattern. Crack spread trading.'},
+  'RS':{ts:0.1,tv:2,init:800,maint:700,name:'Canola',exch:'ICE',type:'Ag',desc:'Canola (rapeseed) futures. Used in cooking oil and biofuel. Canadian Prairie weather sensitive.'},
+  'RTY':{ts:0.1,tv:5,init:7000,maint:6300,name:'E-mini Russell 2000',exch:'CME',type:'Equity',desc:'US small-cap equity index. 2000 smallest stocks in Russell 3000. High domestic economic sensitivity.'},
+  'SB':{ts:0.01,tv:11.2,init:1800,maint:1600,name:'Sugar No. 11',exch:'ICE',type:'Soft',desc:'Raw cane sugar futures. Brazil is the world\'s largest producer. Energy/ethanol mix affects pricing.'},
+  'SF':{ts:0.01,tv:11.2,init:1200,maint:1000,name:'S&P Financial Index',exch:'CME',type:'Equity',desc:'Financial sector index futures.'},
+  'SI':{ts:0.005,tv:25,init:12000,maint:11000,name:'Silver',exch:'COMEX',type:'Metal',desc:'Silver futures. 5,000 troy oz per contract. Both monetary metal and industrial commodity.'},
+  'TN':{ts:0.015625,tv:15.63,init:2200,maint:2000,name:'Ultra 10-Year T-Note',exch:'CBOT',type:'Rates',desc:'10-year Treasury Note futures with extended maturity range. Key duration risk instrument.'},
+  'UB':{ts:0.03125,tv:31.25,init:4000,maint:3600,name:'Ultra T-Bond',exch:'CBOT',type:'Rates',desc:'30+ year maturity T-Bond futures. Highest duration risk among Treasury futures.'},
+  'VX':{ts:0.05,tv:50,init:8000,maint:7200,name:'VIX Volatility Index',exch:'CBOE',type:'Equity',desc:'Fear index futures. Measures implied volatility of S&P 500 options. Mean-reverting instrument.'},
+  'VOLQ':{ts:0.05,tv:50,init:6000,maint:5400,name:'Nasdaq Volatility Index',exch:'CBOE',type:'Equity',desc:'Nasdaq-100 implied volatility index futures. Similar to VIX but for tech-heavy index.'},
+  'YM':{ts:1,tv:5,init:10000,maint:9000,name:'E-mini Dow Jones',exch:'CBOT',type:'Equity',desc:'Tracks DJIA — 30 large-cap US stocks. Less popular than ES/NQ but useful for blue-chip exposure.'},
+  'ZB':{ts:0.03125,tv:31.25,init:3500,maint:3150,name:'T-Bond 30-Year',exch:'CBOT',type:'Rates',desc:'30-year US Treasury Bond futures. Long duration. Highly sensitive to inflation expectations.'},
+  'ZC':{ts:0.25,tv:12.5,init:1200,maint:1000,name:'Corn',exch:'CBOT',type:'Ag',desc:'CBOT corn futures. One of world\'s most traded ag contracts. Weather, ethanol demand are key.'},
+  'ZF':{ts:0.0078125,tv:7.81,init:800,maint:720,name:'5-Year T-Note',exch:'CBOT',type:'Rates',desc:'5-year Treasury Note futures. Intermediate duration instrument used in yield curve trades.'},
+  'ZL':{ts:0.01,tv:6,init:800,maint:720,name:'Soybean Oil',exch:'CBOT',type:'Ag',desc:'Soybean oil futures. Used in cooking and biodiesel. Part of the soy complex (ZS, ZM, ZL).'},
+  'ZM':{ts:0.1,tv:10,init:1400,maint:1260,name:'Soybean Meal',exch:'CBOT',type:'Ag',desc:'Soybean meal futures. Primary high-protein animal feed. Demand driven by pork and poultry.'},
+  'ZN':{ts:0.015625,tv:15.63,init:1400,maint:1260,name:'10-Year T-Note',exch:'CBOT',type:'Rates',desc:'Most liquid Treasury futures contract. Global duration benchmark. Fed policy sensitivity.'},
+  'ZO':{ts:0.25,tv:12.5,init:600,maint:540,name:'Oats',exch:'CBOT',type:'Ag',desc:'Oat futures. Smallest and least liquid grain contract. Used for food and animal feed.'},
+  'ZQ':{ts:0.0025,tv:10.42,init:500,maint:450,name:'30-Day Fed Funds',exch:'CBOT',type:'Rates',desc:'Fed funds rate futures. Market\'s direct expectation of FOMC rate decisions. Used for rate hedging.'},
+  'ZR':{ts:0.5,tv:10,init:600,maint:540,name:'Rough Rice',exch:'CBOT',type:'Ag',desc:'Rough rice futures. Important for Asian food security. Weather risk in US and Asia drives vol.'},
+  'ZS':{ts:0.25,tv:12.5,init:1600,maint:1440,name:'Soybeans',exch:'CBOT',type:'Ag',desc:'Soybean futures. US-China trade war exposure. USDA crop reports are major price movers.'},
+  'ZT':{ts:0.00390625,tv:7.81,init:500,maint:450,name:'2-Year T-Note',exch:'CBOT',type:'Rates',desc:'2-year Treasury Note futures. Most sensitive to near-term Fed policy changes. Low duration.'},
+  'ZW':{ts:0.25,tv:12.5,init:1500,maint:1350,name:'Wheat',exch:'CBOT',type:'Ag',desc:'Soft red winter wheat futures. Geopolitical risk (Black Sea region) significantly impacts pricing.'},
+};
+
+const YAHOO_MAP={'6A':'AUDUSD=X','6B':'GBPUSD=X','6C':'CADUSD=X','6E':'EURUSD=X','6J':'USDJPY=X','6L':'BRLUSD=X','6M':'MXNUSD=X','6N':'NZDUSD=X','6R':'RUBUSD=X','6S':'CHFUSD=X','6Z':'ZARUSD=X','BTC':'BTC-USD','DX':'DX-Y.NYB','VX':'^VIX'};
+function ySym(t){return YAHOO_MAP[t]||(t+'=F');}
+function decPlaces(ts){return(ts.toString().split('.')[1]||'').length;}
+function fmtP(n,ts){return n!=null?n.toFixed(Math.max(decPlaces(ts),2)):'—';}
+function fmtD(n){return n==null?'—':'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtN(n,d=2){return n==null?'—':n.toFixed(d);}
+
+// populate selects
+function populateSelect(id){
+  const s=document.getElementById(id);
+  Object.keys(FUTURES).sort().forEach(k=>{
+    const o=document.createElement('option');o.value=k;o.textContent=k+' — '+FUTURES[k].name;s.appendChild(o);
+  });
+}
+['a-ticker','b-ticker','c-ticker','d-ticker','e-ticker'].forEach(populateSelect);
+
+// ===== LIVE PRICE =====
+let priceCache={};
+async function fetchLive(ticker){
+  if(priceCache[ticker]&&(Date.now()-priceCache[ticker].ts)<60000)return priceCache[ticker];
+  const sym=ySym(ticker);
+  const url=`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=2d`;
+  const proxy=`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+  try{
+    const r=await fetch(proxy);const o=await r.json();
+    const d=JSON.parse(o.contents);const m=d?.chart?.result?.[0]?.meta;
+    if(m&&m.regularMarketPrice){
+      const obj={price:m.regularMarketPrice,high:m.regularMarketDayHigh,low:m.regularMarketDayLow,prev:m.chartPreviousClose||m.previousClose,ts:Date.now()};
+      priceCache[ticker]=obj;return obj;
+    }
+  }catch(e){}
+  return null;
+}
+
+function showSpin(id,show){document.getElementById(id).style.display=show?'inline-block':'none';}
+function setTxt(id,val){document.getElementById(id).textContent=val;}
+function showEl(id,show){document.getElementById(id).style.display=show?(id.includes('results')||id.includes('c-results')||id.includes('b-results')||id==='a-results'?'block':'block'):'none';}
+
+// ===== SPEC TABLE =====
+function renderSpec(ticker,containerId){
+  const s=FUTURES[ticker];
+  document.getElementById(containerId).innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;">
+      <div style="color:var(--muted)">Full Name</div><div>${s.name}</div>
+      <div style="color:var(--muted)">Exchange</div><div>${s.exch}</div>
+      <div style="color:var(--muted)">Type</div><div><span class="tag ${s.type.toLowerCase()}">${s.type}</span></div>
+      <div style="color:var(--muted)">Tick Size</div><div>${s.ts}</div>
+      <div style="color:var(--muted)">Tick Value</div><div>${fmtD(s.tv)}</div>
+      <div style="color:var(--muted)">Init Margin</div><div>${fmtD(s.init)}</div>
+      <div style="color:var(--muted)">Maint Margin</div><div>${fmtD(s.maint)}</div>
+    </div>
+    <div style="margin-top:10px;font-size:10px;color:var(--muted);line-height:1.6;">${s.desc}</div>`;
+}
+
+// ===== MODULE A =====
+let aDir='L', aTicker=null;
+function aSetDir(d){aDir=d;document.getElementById('a-long').classList.toggle('active',d==='L');document.getElementById('a-short').classList.toggle('active',d==='S');}
+async function aOnTicker(){
+  const t=document.getElementById('a-ticker').value;aTicker=t;
+  const s=FUTURES[t];
+  document.getElementById('a-price-card').style.display='block';
+  document.getElementById('a-chip-ts').textContent='Tick: '+s.ts;
+  document.getElementById('a-chip-tv').textContent='$/tick: '+fmtD(s.tv);
+  document.getElementById('a-chip-mg').textContent='Init margin: '+fmtD(s.init);
+  setTxt('a-status','loading…');showSpin('a-spin',true);
+  renderSpec(t,'a-spec-table');
+  const p=await fetchLive(t);
+  showSpin('a-spin',false);
+  if(p){
+    const chg=p.prev?((p.price-p.prev)/p.prev*100):null;
+    setTxt('a-price',fmtP(p.price,s.ts));
+    setTxt('a-high',fmtP(p.high,s.ts));setTxt('a-low',fmtP(p.low,s.ts));setTxt('a-prev',fmtP(p.prev,s.ts));
+    const pill=document.getElementById('a-chg');
+    if(chg!=null){pill.textContent=(chg>=0?'+':'')+chg.toFixed(2)+'%';pill.className='pill '+(chg>=0?'up':'down');}
+    document.getElementById('a-entry').value=fmtP(p.price,s.ts);
+    document.getElementById('a-af').classList.add('show');
+    setTxt('a-status','live');
+  } else {setTxt('a-status','unavailable');}
+}
+function aCalculate(){
+  const t=document.getElementById('a-ticker').value;const s=FUTURES[t];
+  const contracts=parseFloat(document.getElementById('a-contracts').value);
+  const entry=parseFloat(document.getElementById('a-entry').value);
+  const stop=parseFloat(document.getElementById('a-stop').value);
+  const capital=parseFloat(document.getElementById('a-capital').value)||0;
+  const err=document.getElementById('a-err');err.style.display='none';
+  if(!contracts||contracts<=0)return showErr('a-err','Enter valid contract count');
+  if(isNaN(entry)||entry<=0)return showErr('a-err','Enter valid entry price');
+  if(isNaN(stop)||stop<=0)return showErr('a-err','Enter valid stop loss price');
+  const pts=Math.abs(entry-stop);
+  const ticks=pts/s.ts;
+  const rpc=ticks*s.tv;
+  const total=rpc*contracts;
+  const pct=capital>0?(total/capital*100):null;
+  setTxt('r-total',fmtD(total));setTxt('r-rpc',fmtD(rpc));
+  setTxt('r-ticks',ticks.toFixed(1));setTxt('r-pts',fmtP(pts,s.ts));
+  setTxt('r-pct',pct!=null?pct.toFixed(2)+'%':'N/A (enter capital)');
+  setTxt('r-dist',fmtP(pts,s.ts)+' pts ('+((pts/entry)*100).toFixed(2)+'%)');
+  if(capital>0){
+    const bp=document.getElementById('r-bar');const bw=Math.min(pct,100);
+    bp.style.width=bw+'%';bp.className='ratio-bar-fill'+(pct>5?' danger':pct>2?' warn':'');
+    setTxt('r-bar-pct',pct.toFixed(2)+'%');document.getElementById('r-bar-wrap').style.display='block';
+    const wb=document.getElementById('r-warn');
+    if(pct>5){wb.textContent='⚠ Risk exceeds 5% of capital — consider reducing size.';wb.style.display='block';}
+    else if(pct>2){wb.textContent='! Risk between 2-5% of capital — monitor closely.';wb.style.display='block';}
+    else{wb.style.display='none';}
+  }
+  document.getElementById('a-results').style.display='block';
+}
+function aReset(){['a-contracts','a-entry','a-stop','a-capital'].forEach(id=>{document.getElementById(id).value='';});document.getElementById('a-results').style.display='none';document.getElementById('a-af').classList.remove('show');document.getElementById('a-err').style.display='none';}
+
+// ===== MODULE B =====
+let bDir='L';
+function bSetDir(d){bDir=d;document.getElementById('b-long').classList.toggle('active',d==='L');document.getElementById('b-short').classList.toggle('active',d==='S');}
+async function bOnTicker(){
+  const t=document.getElementById('b-ticker').value;
+  const p=await fetchLive(t);
+  if(p){document.getElementById('b-entry').value=fmtP(p.price,FUTURES[t].ts);document.getElementById('b-af').classList.add('show');}
+}
+function bCalculate(){
+  const t=document.getElementById('b-ticker').value;const s=FUTURES[t];
+  const capital=parseFloat(document.getElementById('b-capital').value);
+  const riskpct=parseFloat(document.getElementById('b-riskpct').value);
+  const entry=parseFloat(document.getElementById('b-entry').value);
+  const stop=parseFloat(document.getElementById('b-stop').value);
+  if(!capital||capital<=0)return showErr('b-err','Enter account capital');
+  if(!riskpct||riskpct<=0)return showErr('b-err','Enter max risk %');
+  if(isNaN(entry)||entry<=0)return showErr('b-err','Enter valid entry price');
+  if(isNaN(stop)||stop<=0)return showErr('b-err','Enter valid stop loss price');
+  const allowed=capital*(riskpct/100);
+  const ticks=Math.abs(entry-stop)/s.ts;
+  const rpc=ticks*s.tv;
+  if(rpc<=0)return showErr('b-err','Risk per contract is zero — check prices');
+  const contracts=Math.floor(allowed/rpc);
+  const actual=contracts*rpc;
+  const buffer=allowed-actual;
+  setTxt('bs-contracts',contracts>0?contracts:'0 (stop too close)');
+  setTxt('bs-allowed',fmtD(allowed));setTxt('bs-actual',fmtD(actual));setTxt('bs-buffer',fmtD(buffer));
+  setTxt('bs-rpc',fmtD(rpc));setTxt('bs-ticks',ticks.toFixed(1));
+  const note=document.getElementById('bs-note');
+  if(contracts===0){note.textContent='Stop loss is too tight relative to tick value. Widen stop or reduce contract size.';note.style.display='block';}
+  else if(contracts>=10){note.textContent=`${contracts} contracts represents a large position. Verify margin requirements before entering.`;note.style.display='block';}
+  else{note.style.display='none';}
+  document.getElementById('b-results').style.display='block';
+}
+function bReset(){['b-capital','b-riskpct','b-entry','b-stop'].forEach(id=>document.getElementById(id).value='');document.getElementById('b-results').style.display='none';document.getElementById('b-af').classList.remove('show');document.getElementById('b-err').style.display='none';}
+
+// ===== MODULE C =====
+async function cOnTicker(){
+  const t=document.getElementById('c-ticker').value;const s=FUTURES[t];
+  document.getElementById('c-init').value=s.init;document.getElementById('c-maint').value=s.maint;
+  const p=await fetchLive(t);
+  if(p){document.getElementById('c-entry').value=fmtP(p.price,s.ts);document.getElementById('c-af').classList.add('show');}
+}
+function cCalculate(){
+  const t=document.getElementById('c-ticker').value;const s=FUTURES[t];
+  const contracts=parseFloat(document.getElementById('c-contracts').value);
+  const entry=parseFloat(document.getElementById('c-entry').value);
+  const stop=parseFloat(document.getElementById('c-stop').value);
+  const init=parseFloat(document.getElementById('c-init').value);
+  const maint=parseFloat(document.getElementById('c-maint').value);
+  if(!contracts||contracts<=0)return showErr('c-err','Enter valid contract count');
+  if(isNaN(entry)||entry<=0)return showErr('c-err','Enter valid entry price');
+  if(isNaN(stop)||stop<=0)return showErr('c-err','Enter valid stop price');
+  if(!init||init<=0)return showErr('c-err','Enter initial margin');
+  if(!maint||maint<=0)return showErr('c-err','Enter maintenance margin');
+  const ticks=Math.abs(entry-stop)/s.ts;
+  const rpc=ticks*s.tv;
+  const totalRisk=rpc*contracts;
+  const totalInit=init*contracts;
+  const totalMaint=maint*contracts;
+  const ratio=totalRisk/totalInit;
+  setTxt('cm-init',fmtD(totalInit));setTxt('cm-maint',fmtD(totalMaint));
+  setTxt('cm-risk',fmtD(totalRisk));setTxt('cm-ratio',ratio.toFixed(2)+'x');
+  const pct=Math.min((totalRisk/totalInit)*100,150);
+  const bar=document.getElementById('cm-bar');
+  bar.style.width=Math.min(pct,100)+'%';bar.className='ratio-bar-fill'+(ratio>1?' danger':ratio>0.75?' warn':'');
+  setTxt('cm-bar-pct',(totalRisk/totalInit*100).toFixed(1)+'% of init margin');
+  const v=document.getElementById('cm-verdict');
+  if(ratio>1){v.textContent='⚠ DANGER: Trade risk EXCEEDS initial margin. A full adverse move could trigger a margin call before stop is reached.';v.style.display='block';v.style.background='var(--red-d)';v.style.color='var(--red)';v.style.borderColor='rgba(248,113,113,0.2)';}
+  else if(ratio>0.75){v.textContent='! Trade risk is 75%+ of initial margin. High likelihood of margin pressure in adverse move.';v.style.display='block';v.style.background='var(--amber-d)';v.style.color='var(--amber)';v.style.borderColor='rgba(251,191,36,0.2)';}
+  else{v.textContent='✓ Trade risk is within margin. Stop loss is sensibly sized relative to posted collateral.';v.style.display='block';v.style.background='var(--green-d)';v.style.color='var(--green)';v.style.borderColor='rgba(74,222,128,0.2)';}
+  document.getElementById('c-results').style.display='block';
+}
+function cReset(){['c-contracts','c-entry','c-stop','c-init','c-maint'].forEach(id=>document.getElementById(id).value='');document.getElementById('c-results').style.display='none';document.getElementById('c-af').classList.remove('show');document.getElementById('c-err').style.display='none';}
+
+// ===== MODULE D =====
+let dDir='L';
+function dSetDir(d){dDir=d;document.getElementById('d-long').classList.toggle('active',d==='L');document.getElementById('d-short').classList.toggle('active',d==='S');}
+async function dOnTicker(){
+  const t=document.getElementById('d-ticker').value;
+  const p=await fetchLive(t);
+  if(p){document.getElementById('d-entry').value=fmtP(p.price,FUTURES[t].ts);document.getElementById('d-af').classList.add('show');}
+}
+function dCalculate(){
+  const t=document.getElementById('d-ticker').value;const s=FUTURES[t];
+  const contracts=parseFloat(document.getElementById('d-contracts').value);
+  const entry=parseFloat(document.getElementById('d-entry').value);
+  const capital=parseFloat(document.getElementById('d-capital').value)||0;
+  const customShock=parseFloat(document.getElementById('d-custom').value);
+  if(!contracts||contracts<=0)return showErr('d-err','Enter valid contract count');
+  if(isNaN(entry)||entry<=0)return showErr('d-err','Enter valid entry price');
+  const shocks=dDir==='L'
+    ?[{label:'−2% move',pct:-2},{label:'−5% move',pct:-5},{label:'−10% move',pct:-10},{label:'Limit Down (−20%)',pct:-20}]
+    :[{label:'+2% move',pct:2},{label:'+5% move',pct:5},{label:'+10% move',pct:10},{label:'Limit Up (+20%)',pct:20}];
+  if(!isNaN(customShock)){shocks.push({label:`Custom (${customShock>0?'+':''}${customShock}%)`,pct:customShock});}
+  let html=`<div class="stress-row header"><span>Scenario</span><span>Scenario Price</span><span>Tick Move</span><span>Loss/Contract</span><span>Total Loss</span></div>`;
+  shocks.forEach(sc=>{
+    const sp=entry*(1+sc.pct/100);
+    const tickMove=Math.abs(entry-sp)/s.ts;
+    const lossRpc=tickMove*s.tv;
+    const totalLoss=lossRpc*contracts;
+    const pctCap=capital>0?(totalLoss/capital*100):null;
+    html+=`<div class="stress-row">
+      <span style="color:var(--muted);font-size:10px;">${sc.label}</span>
+      <span>${fmtP(sp,s.ts)}</span>
+      <span style="color:var(--amber)">${tickMove.toFixed(0)} ticks</span>
+      <span class="stress-loss">${fmtD(lossRpc)}</span>
+      <span class="stress-loss" style="font-weight:600;">${fmtD(totalLoss)}${pctCap!=null?' <span style="font-size:9px;color:var(--muted)">('+pctCap.toFixed(1)+'% cap)</span>':''}</span>
+    </div>`;
+  });
+  document.getElementById('d-results').innerHTML=html;
+  document.getElementById('d-err').style.display='none';
+}
+function dReset(){['d-contracts','d-entry','d-capital','d-custom'].forEach(id=>document.getElementById(id).value='');document.getElementById('d-results').innerHTML='<div class="port-empty">Run the stress test to see scenario losses.</div>';document.getElementById('d-err').style.display='none';document.getElementById('d-af').classList.remove('show');}
+
+// ===== MODULE E: PORTFOLIO =====
+let eDir='L', portfolio=[];
+function eSetDir(d){eDir=d;document.getElementById('e-long').classList.toggle('active',d==='L');document.getElementById('e-short').classList.toggle('active',d==='S');}
+function eAdd(){
+  const t=document.getElementById('e-ticker').value;const s=FUTURES[t];
+  const contracts=parseFloat(document.getElementById('e-contracts').value);
+  const entry=parseFloat(document.getElementById('e-entry').value);
+  const stop=parseFloat(document.getElementById('e-stop').value);
+  const margin=parseFloat(document.getElementById('e-margin').value)||s.init;
+  if(!contracts||contracts<=0)return showErr('e-err','Enter valid contract count');
+  if(isNaN(entry)||entry<=0)return showErr('e-err','Enter valid entry price');
+  if(isNaN(stop)||stop<=0)return showErr('e-err','Enter valid stop price');
+  const ticks=Math.abs(entry-stop)/s.ts;
+  const rpc=ticks*s.tv;
+  const totalRisk=rpc*contracts;
+  const totalMargin=margin*contracts;
+  portfolio.push({id:Date.now(),ticker:t,name:s.name,dir:eDir,contracts,entry,stop,margin,ticks,rpc,totalRisk,totalMargin});
+  document.getElementById('e-err').style.display='none';
+  eRefresh();
+  ['e-entry','e-stop'].forEach(id=>document.getElementById(id).value='');
+}
+function eRemove(id){portfolio=portfolio.filter(p=>p.id!==id);eRefresh();}
+function eClear(){portfolio=[];eRefresh();}
+function eRefresh(){
+  const capital=parseFloat(document.getElementById('e-capital').value)||0;
+  const totalRisk=portfolio.reduce((a,p)=>a+p.totalRisk,0);
+  const totalMargin=portfolio.reduce((a,p)=>a+p.totalMargin,0);
+  const largest=portfolio.length?Math.max(...portfolio.map(p=>p.totalRisk)):0;
+  setTxt('ep-risk',fmtD(totalRisk));setTxt('ep-margin',fmtD(totalMargin));
+  setTxt('ep-largest',fmtD(largest));setTxt('ep-count',portfolio.length);
+
+  // Concentration bars
+  const conc=document.getElementById('e-conc');
+  if(portfolio.length===0){conc.innerHTML='<div style="font-size:11px;color:var(--muted);">No positions yet.</div>';}
+  else{
+    const sorted=[...portfolio].sort((a,b)=>b.totalRisk-a.totalRisk);
+    conc.innerHTML=sorted.map(p=>{
+      const pct=totalRisk>0?(p.totalRisk/totalRisk*100):0;
+      return `<div class="conc-item"><div class="conc-label"><span>${p.ticker} <span style="color:var(--muted);font-size:10px;">${p.dir==='L'?'LONG':'SHORT'} ${p.contracts}x</span></span><span>${pct.toFixed(1)}% — ${fmtD(p.totalRisk)}</span></div><div class="conc-bar"><div class="conc-fill" style="width:${pct}%"></div></div></div>`;
+    }).join('');
+  }
+
+  // Positions table
+  const tbl=document.getElementById('e-table');
+  if(portfolio.length===0){tbl.innerHTML='<div class="port-empty">No positions added yet.</div>';return;}
+  tbl.innerHTML=`<div class="tbl-wrap"><table>
+    <thead><tr><th>Ticker</th><th>Side</th><th>Contracts</th><th>Entry</th><th>Stop</th><th class="td-right">Risk/Contract</th><th class="td-right">Total Risk</th><th class="td-right">Margin Used</th><th></th></tr></thead>
+    <tbody>${portfolio.map(p=>`<tr>
+      <td><strong style="color:var(--accent)">${p.ticker}</strong><div style="font-size:9px;color:var(--muted)">${p.name}</div></td>
+      <td><span class="tag ${p.dir==='L'?'long':'short'}">${p.dir==='L'?'LONG':'SHORT'}</span></td>
+      <td>${p.contracts}</td>
+      <td>${fmtP(p.entry,FUTURES[p.ticker].ts)}</td>
+      <td>${fmtP(p.stop,FUTURES[p.ticker].ts)}</td>
+      <td class="td-right" style="color:var(--blue)">${fmtD(p.rpc)}</td>
+      <td class="td-right" style="color:var(--red);font-weight:600">${fmtD(p.totalRisk)}</td>
+      <td class="td-right" style="color:var(--muted)">${fmtD(p.totalMargin)}</td>
+      <td><button class="btn btn-danger" style="height:28px;padding:0 10px;font-size:10px" onclick="eRemove(${p.id})">✕</button></td>
+    </tr>`).join('')}</tbody>
+    <tfoot><tr style="border-top:0.5px solid var(--border2)">
+      <td colspan="6" style="color:var(--muted);font-size:10px;padding:10px">PORTFOLIO TOTALS</td>
+      <td class="td-right" style="color:var(--red);font-weight:600;padding:10px">${fmtD(totalRisk)}</td>
+      <td class="td-right" style="color:var(--muted);padding:10px">${fmtD(totalMargin)}</td>
+      <td></td>
+    </tr></tfoot>
+  </table></div>`;
+}
+
+// ===== MODULE F: GLOSSARY =====
+let glosTypeFilter='ALL';
+const TYPES=['ALL','Equity','Energy','Metal','FX','Rates','Ag','Soft','Crypto'];
+function buildGlossary(){
+  const f=document.getElementById('glos-filters');
+  f.innerHTML=TYPES.map(t=>`<button class="glos-filter${t==='ALL'?' active':''}" onclick="setGlosType('${t}')">${t}</button>`).join('');
+  renderGlos();
+}
+function setGlosType(t){
+  glosTypeFilter=t;
+  document.querySelectorAll('.glos-filter').forEach(b=>b.classList.toggle('active',b.textContent===t));
+  renderGlos();
+}
+function renderGlos(){
+  const q=document.getElementById('glos-search').value.toLowerCase();
+  const rows=Object.entries(FUTURES).filter(([k,v])=>{
+    const matchType=glosTypeFilter==='ALL'||v.type===glosTypeFilter;
+    const matchQ=!q||k.toLowerCase().includes(q)||v.name.toLowerCase().includes(q)||v.desc.toLowerCase().includes(q)||v.exch.toLowerCase().includes(q)||v.type.toLowerCase().includes(q);
+    return matchType&&matchQ;
+  }).sort((a,b)=>a[0].localeCompare(b[0]));
+  document.getElementById('glos-body').innerHTML=rows.map(([k,v])=>`
+    <div class="glos-row">
+      <span class="glos-ticker">${k}</span>
+      <span class="glos-name">${v.name}</span>
+      <span class="glos-exch"><span class="tag ${v.type.toLowerCase()}">${v.exch}</span></span>
+      <span><span class="tag ${v.type.toLowerCase()}">${v.type}</span></span>
+      <span class="glos-desc">${v.desc}</span>
+    </div>`).join('');
+}
+function glosFilter(){renderGlos();}
+
+// ===== NAV =====
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// ===== UTILS =====
+function showErr(id,msg){const e=document.getElementById(id);e.textContent='! '+msg;e.style.display='block';}
+
+// ===== INIT =====
+buildGlossary();
+// pre-select first ticker on all pages
+['a','b','c','d'].forEach(m=>{
+  const el=document.getElementById(m+'-ticker');
+  if(el&&el.value){
+    const fn={a:aOnTicker,b:bOnTicker,c:cOnTicker,d:dOnTicker}[m];
+    if(m==='a')fn();
+  }
+});
+</script>
+</body>
+</html>
